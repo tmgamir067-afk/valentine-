@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Be My Valentine 💘</title>
+  <style>
+    :root{
+      --bg1:#ffdde1; --bg2:#ee9ca7; --card:#ffffffcc; --text:#2b2b2b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; min-height:100vh; display:grid; place-items:center;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background: radial-gradient(circle at top, var(--bg1), var(--bg2));
+      overflow:hidden;
+    }
+    .card{
+      width:min(680px, 92vw);
+      background:var(--card);
+      backdrop-filter: blur(10px);
+      border:1px solid #fff;
+      border-radius:24px;
+      padding:28px 22px;
+      text-align:center;
+      box-shadow: 0 18px 50px rgba(0,0,0,.18);
+      position:relative;
+      z-index:2;
+    }
+    h1{margin:0 0 10px; font-size:clamp(26px, 4vw, 38px)}
+    p{margin:0 0 18px; font-size:clamp(15px, 2.2vw, 18px); line-height:1.4}
+    .names{
+      display:inline-flex; gap:8px; flex-wrap:wrap; justify-content:center;
+      margin:10px 0 18px; font-weight:600;
+    }
+    .pill{
+      padding:8px 12px; border-radius:999px; background:#fff;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .btns{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:10px}
+    button{
+      border:0; border-radius:14px; padding:14px 18px; font-size:16px; cursor:pointer;
+      transition: transform .12s ease, box-shadow .12s ease;
+      box-shadow: 0 10px 22px rgba(0,0,0,.12);
+      user-select:none;
+    }
+    button:active{transform:scale(.98)}
+    .yes{background:#ff4d6d; color:white}
+    .no{background:white; color:#333}
+    .hidden{display:none}
+    .letter{
+      margin-top:16px;
+      text-align:left;
+      background:#fff;
+      border-radius:18px;
+      padding:16px 16px;
+      border:1px solid rgba(0,0,0,.06);
+    }
+    .signature{margin-top:10px; font-weight:700}
+    /* floating hearts */
+    .heart{
+      position:absolute; left:var(--x); top:110%;
+      font-size: var(--s);
+      opacity:.9;
+      animation: floatUp var(--d) linear infinite;
+      filter: drop-shadow(0 10px 12px rgba(0,0,0,.18));
+      z-index:1;
+    }
+    @keyframes floatUp{
+      from{transform: translateY(0) rotate(0deg); opacity:.0}
+      10%{opacity:.9}
+      to{transform: translateY(-140vh) rotate(360deg); opacity:0}
+    }
+    /* confetti canvas */
+    canvas{position:fixed; inset:0; z-index:3; pointer-events:none}
+  </style>
+</head>
+<body>
+  <canvas id="confetti" class="hidden"></canvas>
+
+  <div class="card" id="card">
+    <h1>Will you be my Valentine? 💘</h1>
+    <p>Just a tiny website to say… you make my world happier.</p>
+
+    <div class="names">
+      <span class="pill" id="fromName">From: Amir</span>
+      <span class="pill" id="toName">To: Babe</span>
+    </div>
+
+    <div class="btns">
+      <button class="yes" id="yesBtn">Yes 😍</button>
+      <button class="no" id="noBtn">No 🙄</button>
+    </div>
+
+    <div id="result" class="hidden">
+      <div class="letter">
+        <p id="loveText">
+          Yayyy!! 🥹💖<br><br>
+          I choose you today, tomorrow, and every day. Thank you for being in my life.
+          Let’s make this Valentine’s special ✨
+        </p>
+        <div class="signature" id="sign">— Amir</div>
+      </div>
+      <div class="btns" style="margin-top:14px">
+        <button id="shareBtn">Copy link 🔗</button>
+        <button class="no" id="editBtn">Edit names ✍️</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ---- Customize quickly (or use ?from= & ?to= in the URL) ----
+    const params = new URLSearchParams(location.search);
+    const from = params.get("from") || "Amir";
+    const to   = params.get("to")   || "Babe";
+
+    const fromEl = document.getElementById("fromName");
+    const toEl   = document.getElementById("toName");
+    const signEl = document.getElementById("sign");
+    fromEl.textContent = "From: " + from;
+    toEl.textContent   = "To: " + to;
+    signEl.textContent = "— " + from;
+
+    // ---- No button runs away ----
+    const noBtn = document.getElementById("noBtn");
+    const card  = document.getElementById("card");
+    const phrases = ["Are you sure? 😭","Think again 🥺","Pls pls 🥹","Don’t do me like that 💔","Ok last chance 😤"];
+    let noCount = 0;
+
+    function moveNo(){
+      const r = card.getBoundingClientRect();
+      const b = noBtn.getBoundingClientRect();
+      const pad = 12;
+      const maxX = r.width - b.width - pad*2;
+      const maxY = r.height - b.height - pad*2;
+
+      const x = pad + Math.random() * Math.max(0, maxX);
+      const y = pad + Math.random() * Math.max(0, maxY);
+
+      noBtn.style.position = "absolute";
+      noBtn.style.left = x + "px";
+      noBtn.style.top  = y + "px";
+      noBtn.textContent = phrases[Math.min(noCount, phrases.length-1)];
+      noCount++;
+    }
+    noBtn.addEventListener("mouseenter", moveNo);
+    noBtn.addEventListener("click", moveNo);
+
+    // ---- Yes -> show letter + confetti ----
+    const yesBtn = document.getElementById("yesBtn");
+    const result = document.getElementById("result");
+    const canvas = document.getElementById("confetti");
+    const ctx = canvas.getContext("2d");
+
+    function resize(){
+      canvas.width = innerWidth * devicePixelRatio;
+      canvas.height = innerHeight * devicePixelRatio;
+      ctx.scale(devicePixelRatio, devicePixelRatio);
+    }
+
+    let pieces = [];
+    function launchConfetti(){
+      canvas.classList.remove("hidden");
+      pieces = Array.from({length: 180}, () => ({
+        x: Math.random()*innerWidth,
+        y: -20 - Math.random()*innerHeight*0.3,
+        w: 6 + Math.random()*6,
+        h: 8 + Math.random()*10,
+        vx: -2 + Math.random()*4,
+        vy: 2 + Math.random()*5,
+        r: Math.random()*Math.PI,
+        vr: -0.2 + Math.random()*0.4
+      }));
+
+      const start = performance.now();
+      function tick(t){
+        ctx.clearRect(0,0,innerWidth,innerHeight);
+        for(const p of pieces){
+          p.x += p.vx; p.y += p.vy; p.r += p.vr;
+          p.vy += 0.03;
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.r);
+          ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+          ctx.restore();
+        }
+        // stop after ~4s
+        if(t - start < 4200) requestAnimationFrame(tick);
+        else canvas.classList.add("hidden");
+      }
+      requestAnimationFrame(tick);
+    }
+
+    yesBtn.addEventListener("click", () => {
+      result.classList.remove("hidden");
+      yesBtn.disabled = true;
+      noBtn.disabled = true;
+      launchConfetti();
+    });
+
+    addEventListener("resize", () => location.reload());
+    // hearts in background
+    const hearts = ["💗","💖","💘","💕","💞","💓"];
+    for(let i=0;i<18;i++){
+      const s = document.createElement("div");
+      s.className = "heart";
+      s.textContent = hearts[Math.floor(Math.random()*hearts.length)];
+      s.style.setProperty("--x", Math.random()*100 + "vw");
+      s.style.setProperty("--s", (18 + Math.random()*22) + "px");
+      s.style.setProperty("--d", (7 + Math.random()*8) + "s");
+      s.style.animationDelay = (-Math.random()*10) + "s";
+      document.body.appendChild(s);
+    }
+
+    // share / edit
+    document.getElementById("shareBtn").addEventListener("click", async () => {
+      const url = location.origin + location.pathname + `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+      await navigator.clipboard.writeText(url);
+      alert("Link copied!");
+    });
+
+    document.getElementById("editBtn").addEventListener("click", () => {
+      const nf = prompt("From name:", from) || from;
+      const nt = prompt("To name:", to) || to;
+      const url = location.pathname + `?from=${encodeURIComponent(nf)}&to=${encodeURIComponent(nt)}`;
+      location.href = url;
+    });
+  </script>
+</body>
+</html>
